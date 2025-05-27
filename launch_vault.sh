@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Fortress Vault Launcher – Secure Access with Fake Vault, Logging, and Auto-Wipe
+# Fortress Vault Launcher – Real Pass, Stealth Trigger, Fake Vault, Auto-Wipe
 
 CORRECT_PASS="Thakrar@1997"
+STEALTH_TRIGGER="Black123"  # <- entering this silently wipes everything
 LOG_FILE=~/.vault_logs/vault_access.log
 FAIL_COUNT_FILE=~/.vault_logs/fail_count
 
@@ -10,19 +11,27 @@ mkdir -p ~/.vault_logs
 touch "$LOG_FILE"
 touch "$FAIL_COUNT_FILE"
 
-# Log timestamp
 timestamp=$(date "+%Y-%m-%d %H:%M:%S")
 
-# Prompt
 echo "====== Fortress Vault Launcher ======"
 read -sp "Enter Vault Passphrase: " input
 echo
 
-# Check passphrase
+# Stealth Wipe Trigger
+if [[ "$input" == "$STEALTH_TRIGGER" ]]; then
+    echo "$timestamp - STEALTH WIPE TRIGGERED: $input" >> "$LOG_FILE"
+    termux-toast -b red "Access Granted"
+    sleep 1
+    rm -rf ~/FortressTools ~/FortressAI ~/FortressPayloads ~/FortressDocs
+    echo "[!] Stealth wipe complete."
+    exit 0
+fi
+
+# Real Vault Access
 if [[ "$input" == "$CORRECT_PASS" ]]; then
     echo "[✓] Passphrase accepted. Unlocking tools..."
     echo "$timestamp - SUCCESS: $input" >> "$LOG_FILE"
-    echo "0" > "$FAIL_COUNT_FILE"  # reset fail count
+    echo "0" > "$FAIL_COUNT_FILE"
 
     echo "Choose your tool:"
     echo "1) Payload Generator"
@@ -42,26 +51,22 @@ if [[ "$input" == "$CORRECT_PASS" ]]; then
 else
     echo "$timestamp - FAIL: $input" >> "$LOG_FILE"
 
-    # Read current fail count
     fails=$(cat "$FAIL_COUNT_FILE")
     fails=$((fails + 1))
     echo "$fails" > "$FAIL_COUNT_FILE"
 
     if [[ $fails -ge 3 ]]; then
-        echo "[!] 3 failed attempts detected. Wiping tools..."
+        echo "[!] 3 failed attempts. Wiping tools..."
         termux-toast -b red "Vault breach — wiping data."
         rm -rf ~/FortressTools ~/FortressAI ~/FortressPayloads ~/FortressDocs
-        echo "[!] Tools wiped."
         exit 1
     fi
 
-    # Fake vault
-    echo "[!] Incorrect passphrase. Accessing limited vault..."
+    echo "[!] Incorrect passphrase. Fake vault loading..."
     echo "Welcome to Notes Pro."
     echo "- Vault Encrypted."
     echo "- AI Access: Restricted"
     echo "- Tools: Inactive"
     echo "- Status: SAFE MODE"
-
     exit 0
 fi
